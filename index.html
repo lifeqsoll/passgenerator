@@ -54,9 +54,7 @@
             font-size: 12px;
             font-weight: 500;
         }
-        .input-group {
-            margin-bottom: 16px;
-        }
+        .input-group { margin-bottom: 16px; }
         label {
             display: flex;
             justify-content: space-between;
@@ -80,6 +78,7 @@
             background: var(--bg);
             border-radius: 16px;
             border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
         }
         #result {
             word-break: break-all;
@@ -88,8 +87,19 @@
             letter-spacing: 1px;
             text-align: center;
             min-height: 24px;
+            margin-bottom: 8px;
         }
-        /* Шкала сложности */
+        .clear-btn {
+            display: block;
+            margin: 8px auto 0;
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0.7;
+            text-decoration: underline;
+        }
         .strength-meter {
             height: 4px;
             width: 100%;
@@ -115,9 +125,7 @@
             font-size: 16px;
             cursor: pointer;
             margin-top: 16px;
-            transition: opacity 0.2s;
         }
-        button.primary:active { opacity: 0.8; }
         .hidden { display: none; }
     </style>
 </head>
@@ -129,7 +137,6 @@
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
     </div>
 
-    <!-- Скрытая форма для системных менеджеров паролей -->
     <form id="saveForm" class="hidden" onsubmit="return false;">
         <input type="text" name="username" value="User">
         <input type="password" id="hiddenPass" name="password" autocomplete="new-password">
@@ -155,10 +162,9 @@
     <button class="primary" onclick="generate()">Сгенерировать</button>
 
     <div class="result-container">
-        <div id="result">нажми создать</div>
-        <div class="strength-meter">
-            <div id="strength-bar"></div>
-        </div>
+        <div id="result">••••••••</div>
+        <div class="strength-meter"><div id="strength-bar"></div></div>
+        <button class="clear-btn" onclick="clearResult()">Очистить</button>
     </div>
 </div>
 
@@ -169,21 +175,24 @@
         body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
     }
 
+    function clearResult() {
+        document.getElementById('result').innerText = '••••••••';
+        document.getElementById('strength-bar').style.width = '0%';
+        document.getElementById('hiddenPass').value = '';
+    }
+
     function updateStrength(pwd) {
         const bar = document.getElementById('strength-bar');
         let score = 0;
-        
         if (pwd.length > 8) score += 25;
         if (pwd.length > 12) score += 25;
         if (/[A-Z]/.test(pwd)) score += 15;
         if (/[0-9]/.test(pwd)) score += 15;
         if (/[^A-Za-z0-9]/.test(pwd)) score += 20;
-
         bar.style.width = score + '%';
-        
-        if (score < 40) bar.style.background = '#ff3b30'; // Красный
-        else if (score < 70) bar.style.background = '#ffcc00'; // Желтый
-        else bar.style.background = '#34c759'; // Зеленый
+        if (score < 40) bar.style.background = '#ff3b30';
+        else if (score < 70) bar.style.background = '#ffcc00';
+        else bar.style.background = '#34c759';
     }
 
     function generate() {
@@ -198,38 +207,24 @@
         const specs = "!@#$%^&*()_+-=[]{}|;:,.<>?";
 
         let password = [];
-
-        // Гарантированные символы
         for(let i=0; i<nSpec; i++) password.push(specs[Math.floor(Math.random()*specs.length)]);
         for(let i=0; i<nUpper; i++) password.push(upper[Math.floor(Math.random()*upper.length)]);
         for(let i=0; i<nNums; i++) password.push(nums[Math.floor(Math.random()*nums.length)]);
         
-        // Остальное
         while(password.length < len) {
             password.push(chars[Math.floor(Math.random()*chars.length)]);
         }
 
-        // Перемешивание (Fisher-Yates)
         for (let i = password.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [password[i], password[j]] = [password[j], password[i]];
         }
 
         const finalPass = password.join('');
-        
-        // Вывод
         document.getElementById('result').innerText = finalPass;
         updateStrength(finalPass);
-        
-        // Копирование
         navigator.clipboard.writeText(finalPass);
-
-        // Магия для предложения сохранить пароль
-        const hiddenPass = document.getElementById('hiddenPass');
-        hiddenPass.value = finalPass;
-        
-        // Имитируем ввод для некоторых браузеров
-        hiddenPass.dispatchEvent(new Event('input', { bubbles: true }));
+        document.getElementById('hiddenPass').value = finalPass;
     }
 </script>
 
