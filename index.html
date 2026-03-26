@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafePass & NickGen</title>
+    <title>SafePass & NickGen Pro</title>
     <style>
         :root {
-            --bg: #ffffff; --text: #1a1a1a; --accent: #007aff; --card: #f5f5f7; --strength-bg: #e0e0e0;
+            --bg: #ffffff; --text: #1a1a1a; --accent: #007aff; --card: #f5f5f7; --strength-bg: #e0e0e0; --border: rgba(0,0,0,0.1);
         }
         [data-theme="dark"] {
-            --bg: #121212; --text: #f5f5f7; --accent: #0a84ff; --card: #1e1e1e; --strength-bg: #333;
+            --bg: #121212; --text: #f5f5f7; --accent: #0a84ff; --card: #1e1e1e; --strength-bg: #333; --border: rgba(255,255,255,0.1);
         }
         body {
             font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg); color: var(--text);
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; margin: 0; transition: 0.3s;
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; margin: 0; padding: 20px 0; transition: 0.3s;
         }
         .container {
-            width: 90%; max-width: 400px; padding: 24px;
+            width: 90%; max-width: 420px; padding: 24px;
             background: var(--card); border-radius: 24px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
@@ -34,28 +34,45 @@
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .theme-toggle {
-            cursor: pointer; background: var(--bg); border: 1px solid #ccc;
+            cursor: pointer; background: var(--bg); border: 1px solid var(--border);
             color: var(--text); padding: 6px 12px; border-radius: 12px; font-size: 12px;
         }
         .input-group { margin-bottom: 12px; }
         label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; opacity: 0.8; }
         input {
-            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1);
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
             background: var(--bg); color: var(--text); box-sizing: border-box; outline: none;
         }
         .result-container {
             margin-top: 20px; padding: 16px; background: var(--bg);
-            border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); text-align: center;
+            border-radius: 16px; border: 1px solid var(--border); text-align: center;
         }
         #result { font-family: 'SF Mono', monospace; font-size: 20px; word-break: break-all; min-height: 24px; }
-        .strength-meter { height: 4px; width: 100%; background: var(--strength-bg); margin-top: 10px; border-radius: 2px; overflow: hidden; }
-        #strength-bar { height: 100%; width: 0%; transition: 0.4s; background: #ff3b30; }
+        
         button.primary {
             width: 100%; padding: 16px; background: var(--accent); color: white;
             border: none; border-radius: 16px; font-weight: 600; font-size: 16px;
             cursor: pointer; margin-top: 12px;
         }
-        .clear-link { display: block; margin-top: 10px; font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: underline; }
+        button.secondary {
+            width: 100%; padding: 10px; background: none; color: var(--accent);
+            border: 1px solid var(--accent); border-radius: 12px; font-size: 14px;
+            cursor: pointer; margin-top: 8px;
+        }
+        
+        /* История */
+        .history-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .history-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .history-item {
+            background: var(--bg); padding: 10px; border-radius: 10px; margin-bottom: 8px;
+            font-size: 12px; border: 1px solid var(--border);
+        }
+        .history-item div { margin-bottom: 4px; }
+        .history-item b { color: var(--accent); }
+        .clear-history { font-size: 11px; color: #ff3b30; cursor: pointer; text-decoration: underline; }
+
+        .strength-meter { height: 4px; width: 100%; background: var(--strength-bg); margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        #strength-bar { height: 100%; width: 0%; transition: 0.4s; background: #ff3b30; }
         .hidden { display: none; }
     </style>
 </head>
@@ -63,7 +80,7 @@
 
 <div class="container">
     <div class="header">
-        <h2 id="title" style="margin:0; font-size: 18px;">Генератор</h2>
+        <h2 style="margin:0; font-size: 18px;">Generator Pro</h2>
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
     </div>
 
@@ -72,57 +89,95 @@
         <div class="tab" onclick="switchTab('nick')">Никнеймы</div>
     </div>
 
-    <!-- Блок Паролей -->
     <div id="pass-section">
         <div class="input-group"><label>Длина</label><input type="number" id="len" value="12"></div>
         <div class="input-group"><label>Спецсимволы</label><input type="number" id="spec" value="2"></div>
         <div class="input-group"><label>Заглавные</label><input type="number" id="upper" value="2"></div>
         <div class="input-group"><label>Цифры</label><input type="number" id="nums" value="2"></div>
-        <button class="primary" onclick="genPass()">Создать пароль</button>
+        <button class="primary" onclick="handleGenPass()">Создать пароль</button>
     </div>
 
-    <!-- Блок Ников -->
     <div id="nick-section" class="hidden">
         <div class="input-group">
-            <label>Ключевое слово <span>(опционально)</span></label>
-            <input type="text" id="keyword" placeholder="Например: dark, wolf, star">
+            <label>Ключевое слово</label>
+            <input type="text" id="keyword" placeholder="Например: lofi, ghost">
         </div>
-        <button class="primary" onclick="genNick()">Создать ник</button>
+        <button class="primary" onclick="handleGenNick()">Создать ник</button>
+        <button id="add-pass-btn" class="secondary hidden" onclick="genPassForNick()">Создать пароль к этому нику</button>
     </div>
 
     <div class="result-container">
         <div id="result">••••••••</div>
         <div id="strength-wrap" class="strength-meter"><div id="strength-bar"></div></div>
-        <span class="clear-link" onclick="clearAll()">Очистить</span>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">
+            Последние сохраненные <span class="clear-history" onclick="clearHistory()">Очистить всё</span>
+        </div>
+        <div id="history-list"></div>
     </div>
 
     <form class="hidden"><input type="password" id="hiddenPass" autocomplete="new-password"></form>
 </div>
 
 <script>
+    let currentNick = "";
+
     function toggleTheme() {
         const b = document.body;
-        const isDark = b.getAttribute('data-theme') === 'dark';
-        b.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     }
 
     function switchTab(type) {
-        document.querySelectorAll('.tab').forEach(t => {
-            t.classList.remove('active');
-            if(t.innerText.toLowerCase().includes(type === 'pass' ? 'парол' : 'ник')) t.classList.add('active');
-        });
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
         document.getElementById('pass-section').classList.toggle('hidden', type !== 'pass');
         document.getElementById('nick-section').classList.toggle('hidden', type !== 'nick');
         document.getElementById('strength-wrap').classList.toggle('hidden', type !== 'pass');
-        clearAll();
-    }
-
-    function clearAll() {
+        document.getElementById('add-pass-btn').classList.add('hidden');
         document.getElementById('result').innerText = '••••••••';
-        document.getElementById('strength-bar').style.width = '0%';
     }
 
-    function genPass() {
+    // База слов
+    const WORDS = {
+        cyber: ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth", "Chrome", "Bit", "Signal", "Laser", "Grid", "Chip"],
+        gothic: ["Grave", "Shadow", "Soul", "Grim", "Dark", "Ghost", "Lullaby", "Abyss", "Bleak", "Silent", "Crow", "Raven", "Funeral", "Night", "Death", "Mist", "Moon", "Bone", "Blood"],
+        anime: ["Kawaii", "Senpai", "Sama", "Chan", "Haze", "Moon", "Sakura", "Spirit", "Echo", "Mirai", "Yume", "Aura", "Mochi", "Chibi", "Kami", "Sora", "Umi", "Kira"],
+        emo: ["Broken", "Vain", "Lost", "Tear", "Rose", "Bleeding", "Sad", "Heart", "End", "Never", "Cry", "Vivid", "Scars", "Hate", "Love", "Rain"],
+        post: ["Witch", "Error", "Demon", "Angel", "Blade", "Star", "Zero", "Punk", "Core", "Vain", "Lord", "Killer", "Soul", "God", "Dust", "Ash", "Storm"]
+    };
+
+    function handleGenPass() {
+        const p = genPassLogic();
+        document.getElementById('result').innerText = p;
+        saveToHistory("Пароль", p);
+    }
+
+    function handleGenNick() {
+        const key = document.getElementById('keyword').value.trim();
+        const allPre = [...WORDS.cyber, ...WORDS.gothic, ...WORDS.anime, ...WORDS.emo];
+        const decorations = ["xX_ _Xx", "† _ †", "v_v", "｡ _ ｡", "- _ -", "[ _ ]", "666_ _666"];
+        
+        let nick = key ? (Math.random() > 0.5 ? key + WORDS.post[Math.floor(Math.random()*WORDS.post.length)] : allPre[Math.floor(Math.random()*allPre.length)] + key) 
+                       : allPre[Math.floor(Math.random()*allPre.length)] + WORDS.post[Math.floor(Math.random()*WORDS.post.length)];
+
+        if(Math.random() > 0.7) nick = decorations[Math.floor(Math.random()*decorations.length)].replace("_", nick);
+        
+        currentNick = nick;
+        document.getElementById('result').innerText = nick;
+        document.getElementById('add-pass-btn').classList.remove('hidden');
+        navigator.clipboard.writeText(nick);
+    }
+
+    function genPassForNick() {
+        const p = genPassLogic();
+        saveToHistory(currentNick, p);
+        alert(`Пароль создан для ${currentNick} и сохранен в историю!`);
+        document.getElementById('add-pass-btn').classList.add('hidden');
+    }
+
+    function genPassLogic() {
         const l = +document.getElementById('len').value, s = +document.getElementById('spec').value, 
               u = +document.getElementById('upper').value, n = +document.getElementById('nums').value;
         const chars = "abcdefghijklmnopqrstuvwxyz", ups = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", nums = "0123456789", sps = "!@#$%^&*";
@@ -132,10 +187,11 @@
         for(let i=0;i<n;i++) p.push(nums[Math.floor(Math.random()*nums.length)]);
         while(p.length < l) p.push(chars[Math.floor(Math.random()*chars.length)]);
         p = p.sort(() => Math.random() - 0.5).join('');
-        document.getElementById('result').innerText = p;
+        
         document.getElementById('hiddenPass').value = p;
         navigator.clipboard.writeText(p);
         updateStr(p);
+        return p;
     }
 
     function updateStr(p) {
@@ -145,44 +201,32 @@
         b.style.background = s < 40 ? '#ff3b30' : (s < 70 ? '#ffcc00' : '#34c759');
     }
 
-    function genNick() {
-        const key = document.getElementById('keyword').value.trim();
-        
-        // Киберпанк & Техно
-        const cyber = ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth"];
-        // Готика & Эмо
-        const gothic = ["Grave", "Shadow", "Soul", "Grim", "Dark", "Ghost", "Lullaby", "Abyss", "Bleak", "Silent", "Crow", "Raven", "Funeral"];
-        // Аниме & Эстетика
-        const anime = ["Kawaii", "Senpai", "Sama", "Chan", "Haze", "Moon", "Sakura", "Spirit", "Echo", "Mirai", "Yume", "Aura"];
-        
-        const allPre = [...cyber, ...gothic, ...anime];
-        const allPost = ["Witch", "Error", "Demon", "Angel", "Blade", "Heart", "Star", "Zero", "One", "God", "Punk", "Core", "Dose", "Vain"];
-        
-        const decorations = ["xX_ _Xx", "† _ †", "v_v", "｡ _ ｡", "- _ -", "[ _ ]", "666_ _666"];
-        
-        let nick = "";
-        
-        if(key) {
-            // Если есть ключевое слово, украшаем его
-            const style = Math.floor(Math.random() * 3);
-            if(style === 0) nick = key + "_" + allPost[Math.floor(Math.random()*allPost.length)];
-            else if(style === 1) nick = allPre[Math.floor(Math.random()*allPre.length)] + key;
-            else nick = key + Math.floor(Math.random()*999);
-        } else {
-            // Если нет слова, создаем микс
-            nick = allPre[Math.floor(Math.random()*allPre.length)] + allPost[Math.floor(Math.random()*allPost.length)];
-        }
-
-        // Рандомно добавляем "декорации" (хХ_ник_Хх) в 30% случаев
-        if(Math.random() > 0.7) {
-            const deco = decorations[Math.floor(Math.random()*decorations.length)];
-            nick = deco.replace("_", nick);
-        }
-        
-        document.getElementById('result').innerText = nick;
-        navigator.clipboard.writeText(nick);
+    // История (LocalStorage)
+    function saveToHistory(label, val) {
+        let history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        history.unshift({ label, val, time: new Date().toLocaleTimeString() });
+        if(history.length > 10) history.pop();
+        localStorage.setItem('gen_history', JSON.stringify(history));
+        renderHistory();
     }
-</script>
 
+    function renderHistory() {
+        const list = document.getElementById('history-list');
+        const history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        list.innerHTML = history.map(item => `
+            <div class="history-item">
+                <div>[${item.time}] <b>${item.label}</b></div>
+                <div style="color:var(--text); opacity:0.7">${item.val}</div>
+            </div>
+        `).join('');
+    }
+
+    function clearHistory() {
+        localStorage.removeItem('gen_history');
+        renderHistory();
+    }
+
+    window.onload = renderHistory;
+</script>
 </body>
 </html>
