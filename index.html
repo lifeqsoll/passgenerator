@@ -3,129 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafePass Generator</title>
+    <title>SafePass & NickGen</title>
     <style>
         :root {
-            --bg: #ffffff;
-            --text: #1a1a1a;
-            --accent: #007aff;
-            --card: #f5f5f7;
-            --strength-bg: #e0e0e0;
+            --bg: #ffffff; --text: #1a1a1a; --accent: #007aff; --card: #f5f5f7; --strength-bg: #e0e0e0;
         }
         [data-theme="dark"] {
-            --bg: #121212;
-            --text: #f5f5f7;
-            --accent: #0a84ff;
-            --card: #1e1e1e;
-            --strength-bg: #333;
+            --bg: #121212; --text: #f5f5f7; --accent: #0a84ff; --card: #1e1e1e; --strength-bg: #333;
         }
         body {
             font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            transition: 0.3s;
+            background-color: var(--bg); color: var(--text);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; transition: 0.3s;
         }
         .container {
-            width: 90%;
-            max-width: 380px;
-            padding: 24px;
-            background: var(--card);
-            border-radius: 24px;
+            width: 90%; max-width: 400px; padding: 24px;
+            background: var(--card); border-radius: 24px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
+        .tabs {
+            display: flex; background: var(--bg); border-radius: 12px;
+            padding: 4px; margin-bottom: 20px; gap: 4px;
         }
+        .tab {
+            flex: 1; padding: 10px; text-align: center; cursor: pointer;
+            border-radius: 10px; font-size: 14px; font-weight: 500; transition: 0.2s;
+        }
+        .tab.active { background: var(--accent); color: white; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .theme-toggle {
-            cursor: pointer;
-            background: var(--bg);
-            border: 1px solid #ccc;
-            color: var(--text);
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
+            cursor: pointer; background: var(--bg); border: 1px solid #ccc;
+            color: var(--text); padding: 6px 12px; border-radius: 12px; font-size: 12px;
         }
-        .input-group { margin-bottom: 16px; }
-        label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.1);
-            background: var(--bg);
-            color: var(--text);
-            box-sizing: border-box;
-            outline: none;
+        .input-group { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; opacity: 0.8; }
+        input {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1);
+            background: var(--bg); color: var(--text); box-sizing: border-box; outline: none;
         }
         .result-container {
-            margin-top: 24px;
-            padding: 16px;
-            background: var(--bg);
-            border-radius: 16px;
-            border: 1px solid rgba(0,0,0,0.05);
-            position: relative;
+            margin-top: 20px; padding: 16px; background: var(--bg);
+            border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); text-align: center;
         }
-        #result {
-            word-break: break-all;
-            font-family: 'SF Mono', Menlo, monospace;
-            font-size: 18px;
-            letter-spacing: 1px;
-            text-align: center;
-            min-height: 24px;
-            margin-bottom: 8px;
-        }
-        .clear-btn {
-            display: block;
-            margin: 8px auto 0;
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-size: 12px;
-            cursor: pointer;
-            opacity: 0.7;
-            text-decoration: underline;
-        }
-        .strength-meter {
-            height: 4px;
-            width: 100%;
-            background: var(--strength-bg);
-            margin-top: 12px;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        #strength-bar {
-            height: 100%;
-            width: 0%;
-            transition: 0.4s ease;
-            background: #ff3b30;
-        }
+        #result { font-family: 'SF Mono', monospace; font-size: 20px; word-break: break-all; min-height: 24px; }
+        .strength-meter { height: 4px; width: 100%; background: var(--strength-bg); margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        #strength-bar { height: 100%; width: 0%; transition: 0.4s; background: #ff3b30; }
         button.primary {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 16px;
+            width: 100%; padding: 16px; background: var(--accent); color: white;
+            border: none; border-radius: 16px; font-weight: 600; font-size: 16px;
+            cursor: pointer; margin-top: 12px;
         }
+        .clear-link { display: block; margin-top: 10px; font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .hidden { display: none; }
     </style>
 </head>
@@ -133,98 +63,124 @@
 
 <div class="container">
     <div class="header">
-        <h2 style="margin:0; font-size: 20px;">Пароль</h2>
+        <h2 id="title" style="margin:0; font-size: 18px;">Генератор</h2>
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Тема</button>
     </div>
 
-    <form id="saveForm" class="hidden" onsubmit="return false;">
-        <input type="text" name="username" value="User">
-        <input type="password" id="hiddenPass" name="password" autocomplete="new-password">
-    </form>
-
-    <div class="input-group">
-        <label>Длина <span>(символов)</span></label>
-        <input type="number" id="len" value="16" min="4" max="50">
-    </div>
-    <div class="input-group">
-        <label>Спецсимволы <span>(!@#)</span></label>
-        <input type="number" id="spec" value="2">
-    </div>
-    <div class="input-group">
-        <label>Заглавные <span>(ABC)</span></label>
-        <input type="number" id="upper" value="2">
-    </div>
-    <div class="input-group">
-        <label>Цифры <span>(123)</span></label>
-        <input type="number" id="nums" value="2">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('pass')">Пароли</div>
+        <div class="tab" onclick="switchTab('nick')">Никнеймы</div>
     </div>
 
-    <button class="primary" onclick="generate()">Сгенерировать</button>
+    <!-- Блок Паролей -->
+    <div id="pass-section">
+        <div class="input-group"><label>Длина</label><input type="number" id="len" value="12"></div>
+        <div class="input-group"><label>Спецсимволы</label><input type="number" id="spec" value="2"></div>
+        <div class="input-group"><label>Заглавные</label><input type="number" id="upper" value="2"></div>
+        <div class="input-group"><label>Цифры</label><input type="number" id="nums" value="2"></div>
+        <button class="primary" onclick="genPass()">Создать пароль</button>
+    </div>
+
+    <!-- Блок Ников -->
+    <div id="nick-section" class="hidden">
+        <div class="input-group">
+            <label>Ключевое слово <span>(опционально)</span></label>
+            <input type="text" id="keyword" placeholder="Например: dark, wolf, star">
+        </div>
+        <button class="primary" onclick="genNick()">Создать ник</button>
+    </div>
 
     <div class="result-container">
         <div id="result">••••••••</div>
-        <div class="strength-meter"><div id="strength-bar"></div></div>
-        <button class="clear-btn" onclick="clearResult()">Очистить</button>
+        <div id="strength-wrap" class="strength-meter"><div id="strength-bar"></div></div>
+        <span class="clear-link" onclick="clearAll()">Очистить</span>
     </div>
+
+    <form class="hidden"><input type="password" id="hiddenPass" autocomplete="new-password"></form>
 </div>
 
 <script>
     function toggleTheme() {
-        const body = document.body;
-        const current = body.getAttribute('data-theme');
-        body.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        const b = document.body;
+        const isDark = b.getAttribute('data-theme') === 'dark';
+        b.setAttribute('data-theme', isDark ? 'light' : 'dark');
     }
 
-    function clearResult() {
+    function switchTab(type) {
+        document.querySelectorAll('.tab').forEach(t => {
+            t.classList.remove('active');
+            if(t.innerText.toLowerCase().includes(type === 'pass' ? 'парол' : 'ник')) t.classList.add('active');
+        });
+        document.getElementById('pass-section').classList.toggle('hidden', type !== 'pass');
+        document.getElementById('nick-section').classList.toggle('hidden', type !== 'nick');
+        document.getElementById('strength-wrap').classList.toggle('hidden', type !== 'pass');
+        clearAll();
+    }
+
+    function clearAll() {
         document.getElementById('result').innerText = '••••••••';
         document.getElementById('strength-bar').style.width = '0%';
-        document.getElementById('hiddenPass').value = '';
     }
 
-    function updateStrength(pwd) {
-        const bar = document.getElementById('strength-bar');
-        let score = 0;
-        if (pwd.length > 8) score += 25;
-        if (pwd.length > 12) score += 25;
-        if (/[A-Z]/.test(pwd)) score += 15;
-        if (/[0-9]/.test(pwd)) score += 15;
-        if (/[^A-Za-z0-9]/.test(pwd)) score += 20;
-        bar.style.width = score + '%';
-        if (score < 40) bar.style.background = '#ff3b30';
-        else if (score < 70) bar.style.background = '#ffcc00';
-        else bar.style.background = '#34c759';
+    function genPass() {
+        const l = +document.getElementById('len').value, s = +document.getElementById('spec').value, 
+              u = +document.getElementById('upper').value, n = +document.getElementById('nums').value;
+        const chars = "abcdefghijklmnopqrstuvwxyz", ups = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", nums = "0123456789", sps = "!@#$%^&*";
+        let p = [];
+        for(let i=0;i<s;i++) p.push(sps[Math.floor(Math.random()*sps.length)]);
+        for(let i=0;i<u;i++) p.push(ups[Math.floor(Math.random()*ups.length)]);
+        for(let i=0;i<n;i++) p.push(nums[Math.floor(Math.random()*nums.length)]);
+        while(p.length < l) p.push(chars[Math.floor(Math.random()*chars.length)]);
+        p = p.sort(() => Math.random() - 0.5).join('');
+        document.getElementById('result').innerText = p;
+        document.getElementById('hiddenPass').value = p;
+        navigator.clipboard.writeText(p);
+        updateStr(p);
     }
 
-    function generate() {
-        const len = parseInt(document.getElementById('len').value) || 12;
-        const nSpec = parseInt(document.getElementById('spec').value) || 0;
-        const nUpper = parseInt(document.getElementById('upper').value) || 0;
-        const nNums = parseInt(document.getElementById('nums').value) || 0;
+    function updateStr(p) {
+        const b = document.getElementById('strength-bar');
+        let s = Math.min(p.length * 7, 100);
+        b.style.width = s + '%';
+        b.style.background = s < 40 ? '#ff3b30' : (s < 70 ? '#ffcc00' : '#34c759');
+    }
 
-        const chars = "abcdefghijklmnopqrstuvwxyz";
-        const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        const nums = "0123456789";
-        const specs = "!@#$%^&*()_+-=[]{}|;:,.<>?";
-
-        let password = [];
-        for(let i=0; i<nSpec; i++) password.push(specs[Math.floor(Math.random()*specs.length)]);
-        for(let i=0; i<nUpper; i++) password.push(upper[Math.floor(Math.random()*upper.length)]);
-        for(let i=0; i<nNums; i++) password.push(nums[Math.floor(Math.random()*nums.length)]);
+    function genNick() {
+        const key = document.getElementById('keyword').value.trim();
         
-        while(password.length < len) {
-            password.push(chars[Math.floor(Math.random()*chars.length)]);
+        // Киберпанк & Техно
+        const cyber = ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth"];
+        // Готика & Эмо
+        const gothic = ["Grave", "Shadow", "Soul", "Grim", "Dark", "Ghost", "Lullaby", "Abyss", "Bleak", "Silent", "Crow", "Raven", "Funeral"];
+        // Аниме & Эстетика
+        const anime = ["Kawaii", "Senpai", "Sama", "Chan", "Haze", "Moon", "Sakura", "Spirit", "Echo", "Mirai", "Yume", "Aura"];
+        
+        const allPre = [...cyber, ...gothic, ...anime];
+        const allPost = ["Witch", "Error", "Demon", "Angel", "Blade", "Heart", "Star", "Zero", "One", "God", "Punk", "Core", "Dose", "Vain"];
+        
+        const decorations = ["xX_ _Xx", "† _ †", "v_v", "｡ _ ｡", "- _ -", "[ _ ]", "666_ _666"];
+        
+        let nick = "";
+        
+        if(key) {
+            // Если есть ключевое слово, украшаем его
+            const style = Math.floor(Math.random() * 3);
+            if(style === 0) nick = key + "_" + allPost[Math.floor(Math.random()*allPost.length)];
+            else if(style === 1) nick = allPre[Math.floor(Math.random()*allPre.length)] + key;
+            else nick = key + Math.floor(Math.random()*999);
+        } else {
+            // Если нет слова, создаем микс
+            nick = allPre[Math.floor(Math.random()*allPre.length)] + allPost[Math.floor(Math.random()*allPost.length)];
         }
 
-        for (let i = password.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [password[i], password[j]] = [password[j], password[i]];
+        // Рандомно добавляем "декорации" (хХ_ник_Хх) в 30% случаев
+        if(Math.random() > 0.7) {
+            const deco = decorations[Math.floor(Math.random()*decorations.length)];
+            nick = deco.replace("_", nick);
         }
-
-        const finalPass = password.join('');
-        document.getElementById('result').innerText = finalPass;
-        updateStrength(finalPass);
-        navigator.clipboard.writeText(finalPass);
-        document.getElementById('hiddenPass').value = finalPass;
+        
+        document.getElementById('result').innerText = nick;
+        navigator.clipboard.writeText(nick);
     }
 </script>
 
