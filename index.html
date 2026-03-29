@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SafePass & NickGen Pro</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%237c4dff%22/><text y=%2250%%22 x=%2250%%22 fill=%22white%22 font-family=%22monospace%22 font-weight=%22bold%22 font-size=%2245%22 text-anchor=%22middle%22 dominant-baseline=%22central%22>GEN</text></svg>">
+    
     <style>
         :root {
             --bg: #ffffff; --text: #1a1a1a; --accent: #7c4dff; --card: #f5f5f7; 
@@ -26,7 +28,14 @@
             width: 90%; max-width: 420px; padding: 24px;
             background: var(--card); border-radius: 24px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(15px); border: 1px solid var(--border);
+            backdrop-filter: blur(15px); border: 1.5px solid var(--border);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Тот самый эффект обводки при наведении */
+        .container:hover {
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(124, 77, 255, 0.15);
         }
 
         .tabs {
@@ -48,13 +57,7 @@
         }
 
         .input-group { margin-bottom: 12px; }
-        
-        .horizontal-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
+        .horizontal-group { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
         .horizontal-group .input-wrap { flex: 1; }
         
         label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; opacity: 0.8; }
@@ -64,13 +67,8 @@
             background: var(--bg); color: var(--text); box-sizing: border-box; outline: none;
         }
 
-        /* Контейнер кнопок */
         .btn-container { margin-top: 12px; }
-        .btn-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
         .result-container {
             margin-top: 20px; padding: 16px; background: var(--bg);
@@ -83,7 +81,9 @@
         button.primary {
             width: 100%; padding: 16px; background: var(--accent); color: white;
             border: none; border-radius: 16px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.2s;
         }
+        button.primary:active { opacity: 0.8; }
 
         #toast {
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
@@ -103,7 +103,6 @@
         .strength-meter { height: 4px; width: 100%; background: var(--strength-bg); margin-top: 10px; border-radius: 2px; overflow: hidden; }
         #strength-bar { height: 100%; width: 0%; transition: 0.4s; }
         .hidden { display: none !important; }
-        
         .mail-hint { font-size: 11px; text-align: center; color: var(--accent); margin-top: 12px; line-height: 1.4; }
     </style>
 </head>
@@ -124,7 +123,7 @@
     </div>
 
     <div id="pass-section">
-        <div class="input-group"><label>Длина</label><input type="number" id="len" value="12"></div>
+        <div class="input-group"><label>Длина</label><input type="number" id="len" value="15"></div>
         <div class="input-group"><label>Спецсимволы</label><input type="number" id="spec" value="2"></div>
         <div class="input-group"><label>Заглавные</label><input type="number" id="upper" value="2"></div>
         <div class="input-group"><label>Цифры</label><input type="number" id="nums" value="2"></div>
@@ -158,7 +157,7 @@
         <button class="primary" onclick="initMail()">🌐 Открыть Guerrilla Mail</button>
         <div class="mail-hint">
             1. Скопируй адрес в открывшейся вкладке.<br>
-            2. Кликни на поле «••••••••» ниже, чтобы сохранить его.
+            2. Кликни на поле ниже, чтобы сохранить его.
         </div>
     </div>
 
@@ -182,7 +181,6 @@
 
 <script>
     let currentNick = "";
-
     const WORDS = {
         cyber: ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth", "Chrome", "Bit", "Signal", "Laser", "Grid", "Chip", "Vortex", "Sudo", "Root", "Buffer", "Uplink"],
         gothic: ["Grave", "Shadow", "Soul", "Grim", "Dark", "Ghost", "Lullaby", "Abyss", "Bleak", "Silent", "Crow", "Raven", "Funeral", "Night", "Death", "Mist", "Moon", "Bone", "Blood", "Doom", "Curse", "Epitaph", "Relic"],
@@ -200,7 +198,7 @@
 
     function switchTab(type) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        if(event) event.target.classList.add('active');
+        event.currentTarget.classList.add('active');
         
         document.getElementById('pass-section').classList.toggle('hidden', type !== 'pass');
         document.getElementById('nick-section').classList.toggle('hidden', type !== 'nick');
@@ -208,8 +206,7 @@
         
         if(type === 'nick') resetNickUI();
 
-        const resDiv = document.getElementById('result');
-        resDiv.innerText = "••••••••";
+        document.getElementById('result').innerText = "••••••••";
         document.getElementById('strength-bar').style.width = '0%';
         document.getElementById('strength-wrap').classList.toggle('hidden', type !== 'pass');
     }
@@ -227,34 +224,34 @@
 
     function initMail() {
         window.open("https://www.guerrillamail.com/", "_blank");
-        document.getElementById('result').innerText = "Кликни для импорта почты из буфера";
-        showToast("Сервис открыт в новой вкладке!");
+        document.getElementById('result').innerText = "Кликни для импорта почты";
+        showToast("Сервис открыт!");
     }
 
-    function copyResult() {
+    async function copyResult() {
         const resDiv = document.getElementById('result');
         const text = resDiv.innerText;
 
-        if(text === "••••••••" || text.includes("Кликни") || text.includes("импорта")) {
-            navigator.clipboard.readText().then(clip => {
+        if(text === "••••••••" || text.includes("Кликни")) {
+            try {
+                const clip = await navigator.clipboard.readText();
                 const clean = clip.trim();
-                if(clean.includes('@') && !clean.includes('<') && clean.length < 100) {
+                if(clean.includes('@')) {
                     resDiv.innerText = clean;
                     saveToHistory("Почта", clean);
-                    showToast("Почта импортирована!");
+                    showToast("Импортировано!");
                 } else {
-                    showToast("В буфере нет адреса почты!");
+                    showToast("В буфере нет почты!");
                 }
-            }).catch(() => {
-                const manual = prompt("Вставь адрес почты вручную:");
+            } catch (e) {
+                const manual = prompt("Вставь почту вручную:");
                 if(manual && manual.includes('@')) {
                     resDiv.innerText = manual;
                     saveToHistory("Почта", manual);
                 }
-            });
+            }
             return;
         }
-
         navigator.clipboard.writeText(text).then(() => showToast());
     }
 
@@ -291,17 +288,14 @@
                        : allPre[Math.floor(Math.random()*allPre.length)] + WORDS.post[Math.floor(Math.random()*WORDS.post.length)];
         
         if(Math.random() > 0.7) nick = decs[Math.floor(Math.random()*decs.length)].replace("_", nick);
-        
         if(document.getElementById('random-case').checked) {
             nick = nick.split('').map(c => Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase()).join('');
         }
         
         currentNick = nick;
         document.getElementById('result').innerText = nick;
-        
         document.getElementById('gen-nick-btn').classList.add('hidden');
         document.getElementById('nick-step-2').classList.remove('hidden');
-        
         navigator.clipboard.writeText(nick).then(() => showToast("Ник скопирован!"));
     }
 
