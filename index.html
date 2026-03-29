@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafePass & NickGen Pro</title>
+    <style>
+        :root {
+            --bg: #ffffff; --text: #1a1a1a; --accent: #7c4dff; --card: #f5f5f7; 
+            --strength-bg: #e0e0e0; --border: rgba(0,0,0,0.1); --toast-bg: #1a1a1a;
+            --btn-dark-bg: rgba(0,0,0,0.05); /* Цвет для темной кнопки в светлой теме */
+        }
+        [data-theme="dark"] {
+            --bg: #0b0b0e; --text: #ececec; --accent: #7c4dff; --card: rgba(18, 18, 22, 0.45); 
+            --strength-bg: #333; --border: rgba(255,255,255,0.05); --toast-bg: #7c4dff;
+            --btn-dark-bg: #1a1a1a; /* Цвет кнопки как у неактивной вкладки "Пароли" */
+        }
+
+        /* --- АНИМАЦИИ --- */
+        @keyframes fastLoad {
+            0% { opacity: 0; filter: blur(15px); transform: scale(1.02); }
+            100% { opacity: 1; filter: blur(0); transform: scale(1.0); }
+        }
+        @keyframes btnGlitch {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-3px) skewX(1deg); }
+            100% { transform: translateY(-2px) skewX(0deg); }
+        }
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translate(-50%, 20px); }
+            20% { opacity: 1; transform: translate(-50%, 0); }
+            80% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            display: flex; justify-content: center; align-items: flex-start;
+            min-height: 100vh; margin: 0; padding: 20px 0;
+            animation: fastLoad 0.5s ease-out forwards;
+            overflow-x: hidden;
+            transition: 0.3s;
+        }
+
+        .bg-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; background: radial-gradient(circle at 50% 50%, #130a24 0%, #0b0b0e 100%);
+            display: none;
+        }
+        [data-theme="dark"] .bg-glow { display: block; }
+
+        .container {
+            width: 90%; max-width: 420px; padding: 24px;
+            background: var(--card); border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            transition: 0.3s ease;
+        }
+        .container:hover { border-color: var(--accent); box-shadow: 0 15px 50px rgba(124, 77, 255, 0.15); }
+
+        .tabs {
+            display: flex; background: rgba(0,0,0,0.05); border-radius: 12px;
+            padding: 4px; margin-bottom: 20px; gap: 4px;
+        }
+        [data-theme="dark"] .tabs { background: rgba(255,255,255,0.05); }
+
+        .tab {
+            flex: 1; padding: 10px; text-align: center; cursor: pointer;
+            border-radius: 10px; font-size: 14px; font-weight: 500; transition: 0.2s;
+            color: var(--text); opacity: 0.6;
+        }
+        .tab.active { background: var(--accent); color: white; opacity: 1; box-shadow: 0 4px 15px rgba(124, 77, 255, 0.3); }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .theme-toggle {
+            cursor: pointer; background: var(--bg); border: 1px solid var(--border);
+            color: var(--text); padding: 6px 12px; border-radius: 12px; font-size: 12px;
+            transition: 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+
+        .input-group { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; opacity: 0.8; }
+        
+        .check-group { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; margin-top: 10px; }
+        input[type="number"], input[type="text"] {
+            width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
+            background: var(--bg); color: var(--text); box-sizing: border-box; outline: none;
+            transition: 0.2s;
+        }
+        input:focus { border-color: var(--accent); }
+
+        .result-container {
+            margin-top: 20px; padding: 16px; background: var(--bg);
+            border-radius: 16px; border: 1px solid var(--border); text-align: center;
+        }
+        #result { font-family: 'SF Mono', monospace; font-size: 20px; word-break: break-all; min-height: 24px; color: var(--accent); }
+        
+        /* Группа кнопок */
+        .button-row { display: flex; gap: 10px; margin-top: 12px; }
+
+        button.primary {
+            flex: 1; padding: 14px; background: var(--accent); color: white;
+            border: none; border-radius: 16px; font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: 0.2s;
+        }
+        
+        /* Та самая ТЕМНАЯ кнопка (стиль как у кнопки Пароли) */
+        button.secondary {
+            flex: 1; padding: 14px; background: var(--btn-dark-bg); color: var(--text);
+            border: 1px solid var(--border); border-radius: 16px; font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: 0.2s;
+        }
+
+        button:hover { animation: btnGlitch 0.3s forwards; opacity: 0.9; }
+
+        #toast {
+            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+            background: var(--toast-bg); color: white; padding: 10px 20px;
+            border-radius: 20px; font-size: 14px; z-index: 100; display: none;
+            animation: toastFade 2s forwards;
+        }
+        
+        .history-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+        .history-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .history-item {
+            background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 8px;
+            font-size: 12px; border: 1px solid var(--border); position: relative;
+        }
+        .history-item-content { color: var(--accent); font-weight: 600; margin-top: 4px; word-break: break-all;}
+        .delete-single { position: absolute; top: 10px; right: 10px; color: #ff3b30; cursor: pointer; opacity: 0.6; }
+        
+        .strength-meter { height: 4px; width: 100%; background: var(--strength-bg); margin-top: 10px; border-radius: 2px; overflow: hidden; }
+        #strength-bar { height: 100%; width: 0%; transition: 0.4s; background: #ff3b30; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body data-theme="light">
+
+<div class="bg-glow"></div>
+<div id="toast">Скопировано!</div>
+
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0; font-size: 18px; font-family: monospace;">&lt;Generator /&gt;</h2>
+        <button class="theme-toggle" onclick="toggleTheme()"><span>🌓</span> Тема</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('pass')">Пароли</div>
+        <div class="tab" onclick="switchTab('nick')">Никнеймы</div>
+    </div>
+
+    <div id="pass-section">
+        <div class="input-group"><label>Длина</label><input type="number" id="len" value="12"></div>
+        <div class="input-group"><label>Спецсимволы</label><input type="number" id="spec" value="2"></div>
+        <div class="input-group"><label>Заглавные</label><input type="number" id="upper" value="2"></div>
+        <div class="input-group"><label>Цифры</label><input type="number" id="nums" value="2"></div>
+        <div class="button-row">
+            <button class="primary" onclick="handleGenPass()">Создать и копировать</button>
+        </div>
+    </div>
+
+    <div id="nick-section" class="hidden">
+        <div class="input-group">
+            <label>Ключевое слово</label>
+            <input type="text" id="keyword" placeholder="Например: lofi, ghost">
+        </div>
+        <label class="check-group">
+            <input type="checkbox" id="random-case" checked> Random Case (cYbEr)
+        </label>
+        <div class="button-row">
+            <button class="primary" onclick="handleGenNick()">Создать</button>
+            <button id="add-pass-btn" class="secondary hidden" onclick="genPassForNick()">Пароль к нему</button>
+        </div>
+    </div>
+
+    <div class="result-container">
+        <div id="result">••••••••</div>
+        <div id="strength-wrap" class="strength-meter"><div id="strength-bar"></div></div>
+    </div>
+
+    <div class="history-section">
+        <div class="history-title">
+            История 
+            <div class="history-controls">
+                <span style="cursor:pointer; color: var(--accent); text-decoration: underline; font-size: 11px;" onclick="exportHistory()">Скачать TXT</span>
+                <span style="cursor:pointer; color: #ff3b30; text-decoration: underline; font-size: 11px; margin-left: 10px;" onclick="clearAllHistory()">Очистить</span>
+            </div>
+        </div>
+        <div id="history-list"></div>
+    </div>
+</div>
+
+<script>
+    let currentNick = "";
+
+    function toggleTheme() {
+        const b = document.body;
+        const newTheme = b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        b.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    function switchTab(type) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('pass-section').classList.toggle('hidden', type !== 'pass');
+        document.getElementById('nick-section').classList.toggle('hidden', type !== 'nick');
+        document.getElementById('strength-wrap').classList.toggle('hidden', type !== 'pass');
+        document.getElementById('add-pass-btn').classList.add('hidden');
+        document.getElementById('result').innerHTML = '••••••••';
+        document.getElementById('result').style.color = 'var(--text)';
+    }
+
+    const WORDS = {
+        cyber: ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth", "Chrome", "Bit", "Signal", "Laser", "Grid", "Chip", "Vortex", "Sudo", "Root", "Buffer", "Uplink"],
+        post: ["Witch", "Error", "Demon", "Angel", "Blade", "Star", "Zero", "Punk", "Core", "Vain", "Lord", "Killer", "Soul", "God", "Dust", "Ash", "Storm", "Rebel", "X"]
+    };
+
+    function randomizeCase(str) {
+        return str.split('').map(char => Math.random() > 0.5 ? char.toUpperCase() : char.toLowerCase()).join('');
+    }
+
+    function showToast(text = "Скопировано!") {
+        const t = document.getElementById('toast');
+        t.innerText = text;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2000);
+    }
+
+    function handleGenPass() {
+        const p = genPassLogic();
+        const res = document.getElementById('result');
+        res.style.color = 'var(--accent)';
+        res.innerText = p;
+        saveToHistory("Пароль", p);
+        copyToClipboard(p);
+    }
+
+    function handleGenNick() {
+        const key = document.getElementById('keyword').value.trim();
+        const allPre = Object.values(WORDS).flat();
+        let nick = key ? (Math.random() > 0.5 ? key + WORDS.post[Math.floor(Math.random()*WORDS.post.length)] : allPre[Math.floor(Math.random()*allPre.length)] + key) 
+                       : allPre[Math.floor(Math.random()*allPre.length)] + WORDS.post[Math.floor(Math.random()*WORDS.post.length)];
+
+        if(document.getElementById('random-case').checked) nick = randomizeCase(nick);
+
+        currentNick = nick;
+        const res = document.getElementById('result');
+        res.style.color = 'var(--accent)';
+        res.innerText = nick;
+        document.getElementById('add-pass-btn').classList.remove('hidden');
+        copyToClipboard(nick);
+    }
+
+    function genPassForNick() {
+        const p = genPassLogic();
+        saveToHistory(currentNick, p);
+        // Теперь пароль в скобках того же цвета, что и ник (var(--accent))
+        document.getElementById('result').innerHTML = `${currentNick} (${p})`;
+        document.getElementById('add-pass-btn').classList.add('hidden');
+        copyToClipboard(p);
+    }
+
+    function genPassLogic() {
+        const l = +document.getElementById('len').value, s = +document.getElementById('spec').value, 
+              u = +document.getElementById('upper').value, n = +document.getElementById('nums').value;
+        const chars = "abcdefghijklmnopqrstuvwxyz", ups = "ABCDEFGHIJKLMNOPQRSTUVWXYZ", nums = "0123456789", sps = "!@#$%^&*";
+        let p = [];
+        for(let i=0;i<s;i++) p.push(sps[Math.floor(Math.random()*sps.length)]);
+        for(let i=0;i<u;i++) p.push(ups[Math.floor(Math.random()*ups.length)]);
+        for(let i=0;i<n;i++) p.push(nums[Math.floor(Math.random()*nums.length)]);
+        while(p.length < l) p.push(chars[Math.floor(Math.random()*chars.length)]);
+        p = p.sort(() => Math.random() - 0.5).join('');
+        updateStr(p);
+        return p;
+    }
+
+    function updateStr(p) {
+        const b = document.getElementById('strength-bar');
+        let s = Math.min(p.length * 7, 100);
+        b.style.width = s + '%';
+        b.style.background = s < 40 ? '#ff3b30' : (s < 70 ? '#ffcc00' : '#34c759');
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => showToast());
+    }
+
+    function saveToHistory(label, val) {
+        let history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        history.unshift({ id: Date.now(), label, val, time: new Date().toLocaleTimeString() });
+        if(history.length > 15) history.pop();
+        localStorage.setItem('gen_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('history-list');
+        const history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        list.innerHTML = history.map(item => `
+            <div class="history-item">
+                <span class="delete-single" onclick="deleteItem(${item.id})">×</span>
+                <span style="opacity:0.6;">[${item.time}]</span>
+                <div class="history-item-content">${item.label}: ${item.val}</div>
+            </div>
+        `).join('');
+    }
+
+    function deleteItem(id) {
+        let history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        history = history.filter(item => item.id !== id);
+        localStorage.setItem('gen_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function clearAllHistory() {
+        if(confirm("Очистить?")) { localStorage.removeItem('gen_history'); renderHistory(); }
+    }
+
+    function exportHistory() {
+        const history = JSON.parse(localStorage.getItem('gen_history') || '[]');
+        let text = history.map(item => `[${item.time}] ${item.label}: ${item.val}`).join('\n');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'history.txt';
+        a.click();
+    }
+
+    window.onload = () => {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        renderHistory();
+    };
+</script>
+</body>
+</html>
