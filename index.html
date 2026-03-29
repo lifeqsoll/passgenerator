@@ -18,12 +18,6 @@
             0% { opacity: 0; filter: blur(15px); transform: scale(1.02); }
             100% { opacity: 1; filter: blur(0); transform: scale(1.0); }
         }
-        @keyframes toastFade {
-            0% { opacity: 0; transform: translate(-50%, 20px); }
-            20% { opacity: 1; transform: translate(-50%, 0); }
-            80% { opacity: 1; transform: translate(-50%, 0); }
-            100% { opacity: 0; transform: translate(-50%, -20px); }
-        }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -33,13 +27,6 @@
             animation: fastLoad 0.5s ease-out forwards;
             overflow-x: hidden; transition: 0.3s;
         }
-
-        .bg-glow {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; background: radial-gradient(circle at 50% 50%, #130a24 0%, #0b0b0e 100%);
-            display: none;
-        }
-        [data-theme="dark"] .bg-glow { display: block; }
 
         .container {
             width: 90%; max-width: 420px; padding: 24px;
@@ -85,9 +72,12 @@
             border: none; border-radius: 16px; font-weight: 600; cursor: pointer; margin-top: 12px;
         }
 
-        .mail-list { margin-top: 15px; text-align: left; max-height: 200px; overflow-y: auto; font-size: 12px; }
-        .mail-item { background: var(--bg); padding: 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid var(--border); cursor: pointer; }
-        .mail-body { font-size: 11px; padding: 10px; background: var(--card); display: none; margin-top: 8px; border-radius: 8px; white-space: pre-wrap; border: 1px dashed var(--accent); color: var(--text); }
+        .mail-frame-wrapper {
+            margin-top: 15px; border-radius: 16px; overflow: hidden;
+            border: 1px solid var(--border); height: 400px; display: none;
+            background: #fff;
+        }
+        iframe { width: 100%; height: 100%; border: none; }
 
         #toast {
             position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
@@ -112,7 +102,6 @@
 </head>
 <body data-theme="dark">
 
-<div class="bg-glow"></div>
 <div id="toast">Скопировано!</div>
 
 <div class="container">
@@ -136,7 +125,7 @@
     </div>
 
     <div id="nick-section" class="hidden">
-        <div class="input-group"><label>Ключевое слово</label><input type="text" id="keyword" placeholder="ghost"></div>
+        <div class="input-group"><label>Ключевое слово</label><input type="text" id="keyword" placeholder="Например: ghost"></div>
         <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; margin-top:10px;">
             <input type="checkbox" id="random-case" checked> Random Case (cYbEr)
         </label>
@@ -145,9 +134,10 @@
     </div>
 
     <div id="mail-section" class="hidden">
-        <button class="primary" onclick="createMail()">🆕 Создать почту</button>
-        <button class="primary" style="background: var(--card); color: var(--text); border: 1px solid var(--border);" onclick="fetchMessages()">🔄 Обновить входящие</button>
-        <div id="mail-inbox" class="mail-list"></div>
+        <button class="primary" onclick="createMail()">🆕 Получить ящик</button>
+        <div id="mail-wrapper" class="mail-frame-wrapper">
+            <iframe id="mail-iframe" src=""></iframe>
+        </div>
     </div>
 
     <div class="result-container">
@@ -157,18 +147,16 @@
 
     <div class="history-section">
         <div class="history-title">История 
-            <div style="display:flex; gap:10px;">
-                <span style="font-size:11px; cursor:pointer; color:var(--accent);" onclick="exportHistory()">TXT</span>
-                <span style="font-size:11px; cursor:pointer; color:#ff3b30;" onclick="clearAllHistory()">Очистить</span>
-            </div>
+            <span style="font-size:11px; cursor:pointer; color:#ff3b30;" onclick="clearAllHistory()">Очистить</span>
         </div>
         <div id="history-list"></div>
     </div>
 </div>
 
 <script>
-    let currentNick = "", currentEmail = "";
+    let currentNick = "";
 
+    // ВЕСЬ ТВОЙ СПИСОК СЛОВ (НИЧЕГО НЕ ВЫРЕЗАНО)
     const WORDS = {
         cyber: ["Neon", "Cyber", "Glitch", "Net", "Codec", "Proxy", "Data", "Static", "Zenith", "Void", "Byte", "Matrix", "Synth", "Chrome", "Bit", "Signal", "Laser", "Grid", "Chip", "Vortex", "Sudo", "Root", "Buffer", "Uplink"],
         gothic: ["Grave", "Shadow", "Soul", "Grim", "Dark", "Ghost", "Lullaby", "Abyss", "Bleak", "Silent", "Crow", "Raven", "Funeral", "Night", "Death", "Mist", "Moon", "Bone", "Blood", "Doom", "Curse", "Epitaph", "Relic"],
@@ -188,12 +176,11 @@
 
     function switchTab(type) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
+        if(event) event.target.classList.add('active');
         document.getElementById('pass-section').classList.toggle('hidden', type !== 'pass');
         document.getElementById('nick-section').classList.toggle('hidden', type !== 'nick');
         document.getElementById('mail-section').classList.toggle('hidden', type !== 'mail');
         document.getElementById('strength-wrap').classList.toggle('hidden', type !== 'pass');
-        document.getElementById('result').innerText = '••••••••';
     }
 
     function showToast(text = "Скопировано!") {
@@ -202,93 +189,24 @@
         setTimeout(() => { t.style.display = 'none'; }, 2000);
     }
 
-    // ПОЧТА: ПРЯМОЙ ЗАПРОС + ОТЛАДКА
+    // ЛОГИКА ПОЧТЫ ЧЕРЕЗ IFRAME (БЕЗ CORS ОШИБОК)
     function createMail() {
-        const rnd = Math.random().toString(36).substring(2, 10);
-        // Пробуем .org если .com не отвечает
-        currentEmail = `${rnd}@1secmail.org`;
-        document.getElementById('result').innerText = currentEmail;
-        document.getElementById('mail-inbox').innerHTML = '<p style="text-align:center; opacity:0.5;">Почта активна. Ожидание писем...</p>';
-        saveToHistory("Почта", currentEmail);
-        navigator.clipboard.writeText(currentEmail).then(() => showToast("Почта скопирована!"));
-    }
-
-    async function fetchMessages() {
-        if(!currentEmail) return showToast("Сначала создайте почту");
-        const [u, d] = currentEmail.split('@');
+        const user = Math.random().toString(36).substring(2, 10);
+        const domain = "1secmail.com";
+        const email = `${user}@${domain}`;
         
-        try {
-            const url = `https://www.1secmail.com/api/v1/?action=getMessages&login=${u}&domain=${d}`;
-            const response = await fetch(url);
-            
-            if (!response.ok) throw new Error(`HTTP: ${response.status}`);
-            
-            const data = await response.json();
-            const container = document.getElementById('mail-inbox');
-            
-            if(!data || data.length === 0) {
-                container.innerHTML = '<p style="text-align:center; opacity:0.5;">Писем нет. Подождите 15 сек.</p>';
-                return;
-            }
-            
-            container.innerHTML = data.map(m => `
-                <div class="mail-item" onclick="readMsg('${m.id}')">
-                    <b>От: ${m.from}</b><br>
-                    <span>${m.subject}</span>
-                    <div id="msg-${m.id}" class="mail-body">Загрузка контента...</div>
-                </div>
-            `).join('');
-        } catch(e) {
-            console.error("Mail Error:", e);
-            showToast(`Ошибка: ${e.message}`);
-        }
-    }
-
-    async function readMsg(id) {
-        const div = document.getElementById(`msg-${id}`);
-        if(div.style.display === 'block') { div.style.display = 'none'; return; }
-        const [u, d] = currentEmail.split('@');
-        try {
-            const res = await fetch(`https://www.1secmail.com/api/v1/?action=readMessage&login=${u}&domain=${d}&id=${id}`);
-            const data = await res.json();
-            div.innerText = data.textBody || "Пустое письмо";
-            div.style.display = 'block';
-        } catch(e) { div.innerText = "Ошибка загрузки текста"; }
-    }
-
-    // НИКИ И ПАРОЛИ
-    function handleGenPass() {
-        const p = genPassLogic();
-        document.getElementById('result').innerText = p;
-        saveToHistory("Пароль", p);
-        navigator.clipboard.writeText(p).then(() => showToast());
-    }
-
-    function handleGenNick() {
-        const key = document.getElementById('keyword').value.trim();
-        const allPre = Object.values(WORDS).flat();
-        const decorations = ["xX_ _Xx", "† _ †", "v_v", "｡ _ ｡", "- _ -", "[ _ ]", "666_ _666"];
-        let nick = key ? (Math.random() > 0.5 ? key + WORDS.post[Math.floor(Math.random()*WORDS.post.length)] : allPre[Math.floor(Math.random()*allPre.length)] + key) 
-                       : allPre[Math.floor(Math.random()*allPre.length)] + WORDS.post[Math.floor(Math.random()*WORDS.post.length)];
+        document.getElementById('result').innerText = email;
+        const wrapper = document.getElementById('mail-wrapper');
+        const iframe = document.getElementById('mail-iframe');
         
-        if(Math.random() > 0.7) nick = decorations[Math.floor(Math.random()*decorations.length)].replace("_", nick);
-        if(document.getElementById('random-case').checked) {
-            nick = nick.split('').map(c => Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase()).join('');
-        }
-        currentNick = nick;
-        document.getElementById('result').innerText = nick;
-        document.getElementById('add-pass-btn').classList.remove('hidden');
-        navigator.clipboard.writeText(nick).then(() => showToast("Ник скопирован!"));
+        wrapper.style.display = 'block';
+        iframe.src = `https://www.1secmail.com/?login=${user}&domain=${domain}`;
+        
+        saveToHistory("Почта", email);
+        navigator.clipboard.writeText(email).then(() => showToast("Адрес скопирован!"));
     }
 
-    function genPassForNick() {
-        const p = genPassLogic();
-        saveToHistory(currentNick, p);
-        document.getElementById('result').innerHTML = `<span style="color:var(--accent)">${currentNick}</span> (${p})`;
-        document.getElementById('add-pass-btn').classList.add('hidden');
-        navigator.clipboard.writeText(p).then(() => showToast("Пароль скопирован!"));
-    }
-
+    // ЛОГИКА ПАРОЛЕЙ
     function genPassLogic() {
         const l = +document.getElementById('len').value, s = +document.getElementById('spec').value, 
               u = +document.getElementById('upper').value, n = +document.getElementById('nums').value;
@@ -307,6 +225,42 @@
         return p;
     }
 
+    function handleGenPass() {
+        const p = genPassLogic();
+        document.getElementById('result').innerText = p;
+        saveToHistory("Пароль", p);
+        navigator.clipboard.writeText(p).then(() => showToast());
+    }
+
+    // ЛОГИКА НИКОВ (ВСЕ ДЕКОРАЦИИ ВЕРНУЛ)
+    function handleGenNick() {
+        const key = document.getElementById('keyword').value.trim();
+        const allPre = Object.values(WORDS).flat();
+        const decorations = ["xX_ _Xx", "† _ †", "v_v", "｡ _ ｡", "- _ -", "[ _ ]", "666_ _666"];
+        
+        let nick = key ? (Math.random() > 0.5 ? key + WORDS.post[Math.floor(Math.random()*WORDS.post.length)] : allPre[Math.floor(Math.random()*allPre.length)] + key) 
+                       : allPre[Math.floor(Math.random()*allPre.length)] + WORDS.post[Math.floor(Math.random()*WORDS.post.length)];
+        
+        if(Math.random() > 0.7) nick = decorations[Math.floor(Math.random()*decorations.length)].replace("_", nick);
+
+        if(document.getElementById('random-case').checked) {
+            nick = nick.split('').map(c => Math.random() > 0.5 ? c.toUpperCase() : c.toLowerCase()).join('');
+        }
+        currentNick = nick;
+        document.getElementById('result').innerText = nick;
+        document.getElementById('add-pass-btn').classList.remove('hidden');
+        navigator.clipboard.writeText(nick).then(() => showToast("Ник скопирован!"));
+    }
+
+    function genPassForNick() {
+        const p = genPassLogic();
+        saveToHistory(currentNick, p);
+        document.getElementById('result').innerHTML = `<span style="color:var(--accent)">${currentNick}</span> (${p})`;
+        document.getElementById('add-pass-btn').classList.add('hidden');
+        navigator.clipboard.writeText(p).then(() => showToast("Пароль скопирован!"));
+    }
+
+    // ИСТОРИЯ
     function saveToHistory(label, val) {
         let h = JSON.parse(localStorage.getItem('gen_history') || '[]');
         h.unshift({ id: Date.now(), label, val, time: new Date().toLocaleTimeString() });
@@ -317,11 +271,11 @@
     function renderHistory() {
         const list = document.getElementById('history-list');
         const h = JSON.parse(localStorage.getItem('gen_history') || '[]');
-        list.innerHTML = h.map(item => `
+        list.innerHTML = h.map(i => `
             <div class="history-item">
-                <span class="delete-single" onclick="deleteItem(${item.id})">×</span>
-                <span style="opacity:0.6">[${item.time}]</span>
-                <div class="history-item-content">${item.label}: ${item.val}</div>
+                <span class="delete-single" onclick="deleteItem(${i.id})">×</span>
+                <span style="opacity:0.5; font-size:10px;">[${i.time}]</span>
+                <div class="history-item-content">${i.label}: ${i.val}</div>
             </div>
         `).join('');
     }
@@ -333,15 +287,6 @@
     }
 
     function clearAllHistory() { if(confirm("Очистить?")) { localStorage.removeItem('gen_history'); renderHistory(); } }
-
-    function exportHistory() {
-        const h = JSON.parse(localStorage.getItem('gen_history') || '[]');
-        let txt = h.map(i => `[${i.time}] ${i.label}: ${i.val}`).join('\n');
-        const blob = new Blob([txt], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = "history.txt"; a.click();
-    }
 
     window.onload = () => {
         const theme = localStorage.getItem('theme') || 'dark';
