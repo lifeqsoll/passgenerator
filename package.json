@@ -1,0 +1,38 @@
+{
+  "name": "cipher-relay",
+  "version": "1.0.0",
+  "description": "Cipher P2P Messenger - WebSocket Relay Server",
+  "main": "server.js",
+  "bin": {
+    "cipher": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "mobile": "MOBILE=1 node server.js",
+    "secure": "SECURE=1 node server.js",
+    "port-8080": "PORT=8080 node server.js"
+  },
+  "keywords": [
+    "p2p",
+    "messenger",
+    "websocket",
+    "cipher",
+    "relay",
+    "secure-chat"
+  ],
+  "author": "Cipher",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {},
+  "preferGlobal": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/cipher.git"
+  }
+}
